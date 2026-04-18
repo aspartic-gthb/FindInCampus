@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind — Home</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon%201.png">
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    /* ── HERO ─────────────────────────────────── */
+    .hero {
+      min-height: calc(100vh - var(--nav-h));
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 60px 52px 80px;
+    }
+
+    .hero-tag {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-b);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 22px;
+    }
+
+    .hero-tag-line {
+      width: 22px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    .hero-title {
+      font-size: clamp(36px, 5vw, 60px);
+      font-weight: 700;
+      line-height: 1.10;
+      letter-spacing: -0.025em;
+      color: var(--white);
+      max-width: 620px;
+      margin-bottom: 22px;
+    }
+
+    .hero-title em {
+      font-style: normal;
+      color: #c8e0c4;
+    }
+
+    .hero-sub {
+      font-family: var(--font-b);
+      font-size: 15px;
+      font-weight: 300;
+      line-height: 1.65;
+      color: var(--text-muted);
+      max-width: 420px;
+      margin-bottom: 44px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    /* stats bottom right */
+    .hero-stats {
+      position: fixed;
+      bottom: 44px;
+      right: 48px;
+      display: flex;
+      gap: 40px;
+      z-index: 10;
+    }
+
+    .stat-num {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--white);
+    }
+
+    .stat-lbl {
+      font-family: var(--font-b);
+      font-size: 10.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-top: 3px;
+    }
+
+    /* scroll hint bottom left */
+    .scroll-hint {
+      position: fixed;
+      bottom: 44px;
+      left: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .scroll-hint-line {
+      width: 30px;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .scroll-hint span {
+      font-family: var(--font-b);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.30);
+    }
+  </style>
+</head>
+
+<body class="has-bg">
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <ul class="nav-pill">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="report-form.html">Report Form</a></li>
+      <li><a href="item-list.html">Item List Page</a></li>
+      <li><a href="item-detail.html">Item Detail Page</a></li>
+      <li><a href="my-reports.html">My Reports</a></li>
+      <li><a href="heatmap.html">Campus Heatmap</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 20 20" fill="none">
+          <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.5" />
+          <path d="M14 14L18 18" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <input type="text" placeholder="AI Powered Search" onkeydown="if(event.key === 'Enter') window.location.href='item-list.html?q=' + encodeURIComponent(this.value)">
+      </div>
+      <button class="btn-login">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.6" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span>Login / Sign Up</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- HERO CONTENT -->
+  <section class="hero">
+    <div class="hero-tag anim d1">
+      <div class="hero-tag-line"></div> Campus Lost &amp; Found
+    </div>
+    <h1 class="hero-title anim d2">
+      Lost Something<br>On <em>Campus?</em><br>Let's Help You Find It
+    </h1>
+    <p class="hero-sub anim d3">
+      Searched every corner of campus? Don't stress! Post, search, or report
+      lost and found items in minutes. Reconnect with what matters.
+    </p>
+    <div class="hero-ctas anim d4">
+      <a href="report-form.html" class="btn btn-accent">Report Found</a>
+      <a href="report-form.html" class="btn">Report Lost</a>
+    </div>
+  </section>
+  <div class="flex-style">
+    <div class="hero-stats anim d5">
+      <div>
+        <div class="stat-num">1,240+</div>
+        <div class="stat-lbl">Items Reunited</div>
+      </div>
+      <div>
+        <div class="stat-num">98%</div>
+        <div class="stat-lbl">Match Rate</div>
+      </div>
+      <div>
+        <div class="stat-num">3 min</div>
+        <div class="stat-lbl">Avg. Report Time</div>
+      </div>
+    </div>
+
+    <div class="scroll-hint anim d5">
+      <div class="scroll-hint-line"></div>
+      <span>Made With Love</span>
+    </div>
+  </div>
+
+  <script src="api/client.js"></script>
+</body>
+
+</html>

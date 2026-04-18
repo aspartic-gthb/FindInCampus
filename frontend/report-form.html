@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind — Report Form</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon%201.png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    .content-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .map-card {
+      position: relative;
+      border-radius: var(--r-card);
+      overflow: hidden;
+      border: 0.5px solid var(--glass-b);
+      background: #141814;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .map-top-badge {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(8, 8, 8, 0.90);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 22px;
+      border-radius: var(--r-pill);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    #map {
+      width: 100%;
+      min-height: 460px;
+      flex: 1;
+    }
+
+    .map-placeholder {
+      width: 100%;
+      min-height: 460px;
+      background: linear-gradient(135deg, #d4e8c7 0%, #b5d0bc 35%, #a0c0d0 65%, #8ab0cc 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .map-placeholder p {
+      font-family: var(--font-b);
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.45);
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .map-footer {
+      background: rgba(8, 8, 8, 0.88);
+      text-align: center;
+      padding: 13px;
+      font-family: var(--font-b);
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.65);
+      border-top: 0.5px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .form-card {
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-title {
+      font-size: 20px;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: underline;
+      text-underline-offset: 5px;
+      text-decoration-thickness: 1px;
+      text-decoration-color: rgba(255, 255, 255, 0.30);
+      margin-bottom: 6px;
+    }
+
+    #imgInput {
+      display: none;
+    }
+
+    .upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .file-name {
+      font-family: var(--font-b);
+      font-size: 11.5px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      display: block;
+    }
+
+    .radio-row {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      background: var(--inp-bg);
+      border: 0.5px solid var(--inp-b);
+      border-radius: var(--r-sm);
+      padding: 13px 16px;
+    }
+
+    .radio-lbl {
+      font-family: var(--font-b);
+      font-size: 13.5px;
+      color: var(--text-soft);
+      margin-right: 6px;
+    }
+
+    .radio-opt {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-b);
+      font-size: 13.5px;
+      color: var(--text-soft);
+      cursor: pointer;
+    }
+
+    .radio-opt input[type="radio"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.40);
+      border-radius: 50%;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .radio-opt input[type="radio"]:checked {
+      border-color: var(--white);
+    }
+
+    .radio-opt input[type="radio"]:checked::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      background: var(--white);
+      border-radius: 50%;
+    }
+
+    @media (max-width: 860px) {
+      .content-row {
+        grid-template-columns: 1fr;
+      }
+
+      #map,
+      .map-placeholder {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+
+<body class="has-bg">
+  <nav class="navbar">
+    <ul class="nav-pill">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="report-form.html" class="active">Report Form</a></li>
+      <li><a href="item-list.html">Item List Page</a></li>
+      <li><a href="item-detail.html">Item Detail Page</a></li>
+      <li><a href="my-reports.html">My Reports</a></li>
+      <li><a href="heatmap.html">Campus Heatmap</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 20 20" fill="none">
+          <circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.5" />
+          <path d="M14 14L18 18" stroke="white" stroke-width="1.5" stroke-linecap="round" />
+        </svg>
+        <input type="text" placeholder="AI Powered Search"
+          onkeydown="if(event.key === 'Enter') window.location.href='item-list.html?q=' + encodeURIComponent(this.value)">
+      </div>
+      <button class="btn-login">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.6" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span>Login / Sign Up</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="page-body">
+    <div class="content-row anim">
+      <div class="map-card">
+        <div class="map-top-badge">Your Current Location</div>
+        <div id="map">
+          <div class="map-placeholder">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"
+                fill="rgba(200,50,50,0.82)" />
+              <circle cx="12" cy="9" r="2.5" fill="white" />
+            </svg>
+            <p>Loading Secure Interactive Map...</p>
+          </div>
+        </div>
+        <div class="map-footer">Powered by OpenStreetMap</div>
+      </div>
+
+      <div class="glass-card form-card">
+        <h2 class="form-title">Report Form</h2>
+        <input class="form-input" type="text" id="rep-name" placeholder="Name">
+        <textarea class="form-textarea" id="rep-desc"
+          placeholder="Description (or Upload Image for AI Based Description)" rows="5"></textarea>
+        <input class="form-input" type="text" id="rep-loc" placeholder="Location Address">
+        <div>
+          <input type="file" id="imgInput" accept="image/*">
+          <label for="imgInput" class="btn btn-solid upload-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="white" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            Upload Image
+          </label>
+          <button type="button" class="btn btn-accent upload-btn" id="aiScanBtn"
+            style="display:none; margin-left: 10px;" onclick="simulateAIScan()">
+            ✨ Auto-fill with Vision AI
+          </button>
+          <span class="file-name" id="fname"></span>
+        </div>
+        <div class="radio-row">
+          <span class="radio-lbl">Status :</span>
+          <label class="radio-opt"><input type="radio" name="status" value="lost" checked> Lost</label>
+          <label class="radio-opt"><input type="radio" name="status" value="found"> Found</label>
+        </div>
+        <button class="btn btn-solid" style="width:100%;padding:14px;" onclick="submitReport()">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+  <script src="api/client.js"></script>
+  <script>
+    // Handle image file selection
+    let selectedImage = null;
+
+    document.getElementById('imgInput').addEventListener('change', function () {
+      const file = this.files[0];
+      document.getElementById('fname').textContent = file?.name || '';
+      selectedImage = file;
+      if (file) {
+        document.getElementById('aiScanBtn').style.display = 'inline-flex';
+      } else {
+        document.getElementById('aiScanBtn').style.display = 'none';
+      }
+    });
+
+    let cachedVisualTags = [];
+
+    // Compress image to save localStorage space and API payload
+    function compressImage(file, maxDimension = 600) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let width = img.width;
+            let height = img.height;
+            if (width > height) {
+              if (width > maxDimension) { height *= maxDimension / width; width = maxDimension; }
+            } else {
+              if (height > maxDimension) { width *= maxDimension / height; height = maxDimension; }
+            }
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    let mlModel = null;
+
+    async function simulateAIScan() {
+      const btn = document.getElementById('aiScanBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = 'Loading Edge ML...';
+      btn.disabled = true;
+
+      try {
+        // Load the model natively in browser if not already loaded
+        if (!mlModel) {
+          mlModel = await mobilenet.load();
+        }
+
+        btn.innerHTML = 'Classifying Locally...';
+
+        // Create an Image Element for TensorFlow to ingest
+        const imgElement = new Image();
+        imgElement.src = await readFileAsDataURL(selectedImage);
+        await new Promise(resolve => imgElement.onload = resolve);
+
+        // Run inference
+        const predictions = await mlModel.classify(imgElement);
+
+        if (predictions && predictions.length > 0) {
+          // MobileNet returns classes separated by commas, like "bullet train, bullet"
+          const topResult = predictions[0].className.split(',')[0].trim();
+          const secondResult = predictions.length > 1 ? predictions[1].className.split(',')[0].trim() : '';
+
+          document.getElementById('rep-name').value = topResult.charAt(0).toUpperCase() + topResult.slice(1);
+          document.getElementById('rep-desc').value = `Looks like a ${topResult}${secondResult ? ' with elements of a ' + secondResult : ''}. Identified locally via browser Edge AI.`;
+
+          // Map visual predictions to our cross-modal matching arrays
+          cachedVisualTags = [];
+          predictions.forEach(p => {
+            p.className.split(', ').forEach(word => {
+              if (!cachedVisualTags.includes(word)) cachedVisualTags.push(word);
+            });
+          });
+        }
+
+        btn.innerHTML = '✨ Edge AI Autofill Complete!';
+      } catch (e) {
+        console.error("ML Error:", e);
+        alert("Edge Processing Failed: " + e.message);
+        btn.innerHTML = 'AI Error. Try Again.';
+      } finally {
+        setTimeout(() => {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+          btn.style.display = 'none'; // hide after use
+        }, 3000);
+      }
+    }
+
+    // Submit report to API
+    async function submitReport() {
+      const user = api.getCurrentUser();
+      if (!user) {
+        alert("You must be logged in to file a report.");
+        return;
+      }
+
+      const name = document.getElementById('rep-name').value.trim();
+      const desc = document.getElementById('rep-desc').value.trim();
+      const loc = document.getElementById('rep-loc').value.trim();
+      const status = document.querySelector('input[name="status"]:checked').value;
+
+      // Validation
+      if (!name || !desc || !loc) {
+        alert('Please fill all fields.');
+        return;
+      }
+
+      // Prepare data for API
+      const reportData = {
+        type: status.toUpperCase(), // 'LOST' or 'FOUND'
+        title: name,
+        description: desc,
+        location: loc,
+        category: getCategoryFromDescription(desc),
+        visualTags: cachedVisualTags, // attach hidden cross-modal visual tags!
+        reporterId: user.id, // Replace with actual user ID from auth
+        lostDate: status === 'lost' ? new Date().toISOString() : undefined,
+        foundDate: status === 'found' ? new Date().toISOString() : undefined
+      };
+
+      // Handle image compression and attachment
+      if (selectedImage) {
+        try {
+          // Shrink to 400px to respect strict localStorage 5MB size limits across multiple items
+          const imageData = await compressImage(selectedImage, 400);
+          reportData.imageUrl = imageData;
+        } catch (error) {
+          console.error('Failed to read image:', error);
+        }
+      }
+
+      try {
+        const newItem = await api.createItem(reportData);
+        alert('Report submitted successfully!');
+        window.location = `item-detail.html?id=${newItem.id}`;
+      } catch (error) {
+        console.error('Failed to submit report:', error);
+        alert('Failed to submit report: ' + error.message);
+      }
+    }
+
+    // Helper: Get category from description (simple keyword matching)
+    function getCategoryFromDescription(desc) {
+      const descLower = desc.toLowerCase();
+      if (descLower.includes('wallet') || descLower.includes('purse')) return 'Wallet';
+      if (descLower.includes('phone') || descLower.includes('mobile')) return 'Electronics';
+      if (descLower.includes('laptop') || descLower.includes('computer')) return 'Electronics';
+      if (descLower.includes('book') || descLower.includes('notebook')) return 'Books';
+      if (descLower.includes('key') || descLower.includes('keys')) return 'Keys';
+      if (descLower.includes('watch') || descLower.includes('clock')) return 'Accessories';
+      if (descLower.includes('bag') || descLower.includes('backpack')) return 'Bags';
+      if (descLower.includes('clothing') || descLower.includes('shirt') || descLower.includes('hoodie')) return 'Clothing';
+      if (descLower.includes('id') || descLower.includes('card')) return 'Documents';
+      return 'Other';
+    }
+
+    // Helper: Read file as Data URL (Fallbacks if no compress)
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Leaflet Map Configuration & Free Theme
+    const centerPoint = [24.7471, 92.8303]; // Lat, Lng format for Leaflet
+    let map, marker;
+
+    function loadLeafletMap() {
+      // Create map
+      map = L.map('map', {
+        center: centerPoint,
+        zoom: 16,
+        zoomControl: false // Keep the UI sleek and clean
+      });
+
+      // Add CartoDB Dark Matter tiles (Free, beautiful dark themed OpenStreetMap)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(map);
+
+      // Create a generic Draggable Marker
+      marker = L.marker(centerPoint, { draggable: true }).addTo(map);
+
+      // Event: User drags marker manually
+      marker.on('dragend', function(e) {
+        const newPos = marker.getLatLng();
+        map.panTo(newPos);
+        reverseGeocode(newPos);
+      });
+
+      // Event: User clicks map
+      map.on('click', function(e) {
+        marker.setLatLng(e.latlng);
+        map.panTo(e.latlng);
+        reverseGeocode(e.latlng);
+      });
+
+      // Hide the placeholder fallback layer
+      const placeholder = document.querySelector('.map-placeholder');
+      if(placeholder) placeholder.style.display = 'none';
+      
+      // Attempt to load GPS natively
+      if (navigator.geolocation) {
+         navigator.geolocation.getCurrentPosition((pos) => {
+           const coords = [pos.coords.latitude, pos.coords.longitude];
+           map.setView(coords, 17);
+           marker.setLatLng(coords);
+           reverseGeocode(L.latLng(pos.coords.latitude, pos.coords.longitude));
+         }, () => console.log("GPS skipped or delayed"));
+      } else {
+         reverseGeocode(L.latLng(centerPoint[0], centerPoint[1])); // load initial center pin
+      }
+    }
+
+    // Free Nominatim Reverse Geocoder API
+    async function reverseGeocode(latLng) {
+      // Put a temporary loading state into the form so user knows it's doing something
+      const coordsStr = `(${latLng.lat.toFixed(5)}, ${latLng.lng.toFixed(5)})`;
+      document.getElementById('rep-loc').value = `Finding exact address... ${coordsStr}`;
+      
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latLng.lat}&lon=${latLng.lng}&zoom=18&addressdetails=1`, {
+          headers: { 'Accept-Language': 'en' }
+        });
+        const data = await res.json();
+        
+        if (data && data.display_name) {
+           // Nominatim returns huge strings. We take just the building name / road
+           let cleanName = data.name || (data.address && data.address.road) || data.display_name.split(',')[0];
+           if (data.address && data.address.city && data.address.city !== cleanName) {
+             cleanName += `, ${data.address.city}`;
+           } else if (data.address && data.address.county && data.address.county !== cleanName) {
+             cleanName += `, ${data.address.county}`;
+           }
+           
+           document.getElementById('rep-loc').value = `${cleanName} ${coordsStr}`;
+        } else {
+           // Fallback to strict coords if the API fails
+           updateLocationField(latLng, "");
+        }
+      } catch (e) {
+         console.warn("Geocode free-API limit hit or failed silently:", e);
+         updateLocationField(latLng, "");
+      }
+    }
+
+    // Helper safety mechanism
+    function updateLocationField(latLng, address) {
+      const coords = `(${latLng.lat.toFixed(5)}, ${latLng.lng.toFixed(5)})`;
+      if (address && address.trim() !== '') {
+         let cleanAddr = address.replace(/(,\s*)+$/, "");
+         document.getElementById('rep-loc').value = `${cleanAddr} ${coords}`;
+      } else {
+         document.getElementById('rep-loc').value = coords;
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', loadLeafletMap);
+  </script>
+</body>
+
+</html>

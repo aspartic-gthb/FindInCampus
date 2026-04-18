@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind — Item List</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon%201.png">
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    /* ── FILTER BAR ──────────────────────────── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .filter-bar h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-right: auto;
+    }
+    .filter-btn {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-b); font-size: 12px; font-weight: 500;
+      color: var(--text-soft);
+      background: var(--inp-bg); border: 0.5px solid var(--inp-b);
+      border-radius: var(--r-pill); padding: 8px 16px;
+      cursor: pointer; transition: background 0.2s, border-color 0.2s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+      background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.3); color: var(--white);
+    }
+    .filter-select {
+      background: var(--inp-bg); border: 0.5px solid var(--inp-b);
+      border-radius: var(--r-pill); padding: 8px 14px;
+      color: var(--text-soft); font-family: var(--font-b); font-size: 12px;
+      cursor: pointer; outline: none; appearance: none;
+    }
+
+    /* ── GRID ────────────────────────────────── */
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── ITEM CARD ───────────────────────────── */
+    .item-card {
+      background: var(--glass-bg);
+      border: 0.5px solid var(--glass-b);
+      border-radius: var(--r-card);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.22s, transform 0.2s, background 0.22s;
+      display: flex; flex-direction: column;
+    }
+    .item-card:hover {
+      border-color: rgba(255,255,255,0.25);
+      transform: translateY(-4px);
+      background: rgba(20,22,20,0.85);
+    }
+
+    /* item image */
+    .item-img-wrap {
+      position: relative;
+      width: 100%; aspect-ratio: 4/3;
+      overflow: hidden;
+      background: #1a1f1a;
+    }
+    .item-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .item-card:hover .item-img-wrap img { transform: scale(1.04); }
+    .item-img-badge {
+      position: absolute; top: 10px; left: 10px;
+    }
+
+    /* item body */
+    .item-body {
+      padding: 16px 18px 18px;
+      display: flex; flex-direction: column; gap: 8px; flex: 1;
+    }
+    .item-name {
+      font-size: 15px; font-weight: 600; color: var(--white);
+      letter-spacing: -0.01em;
+    }
+    .item-loc {
+      display: flex; align-items: center; gap: 6px;
+      font-family: var(--font-b); font-size: 12px; color: var(--text-muted);
+    }
+    .item-loc svg { width: 11px; height: 11px; flex-shrink: 0; opacity: 0.6; }
+
+    /* item footer */
+    .item-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 18px;
+      border-top: 0.5px solid var(--glass-b);
+      gap: 8px;
+    }
+    .item-time {
+      font-family: var(--font-b); font-size: 11px; color: var(--text-dim);
+    }
+    .item-actions { display: flex; gap: 6px; }
+
+    /* pagination */
+    .pagination {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 40px;
+    }
+    .pg-btn {
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; border: 0.5px solid var(--glass-b);
+      background: var(--inp-bg); color: var(--text-soft);
+      font-size: 13px; cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .pg-btn:hover, .pg-btn.active {
+      background: rgba(255,255,255,0.14); border-color: rgba(255,255,255,0.32); color: var(--white);
+    }
+
+    /* placeholder item image background colours */
+    .bg-c1 { background: linear-gradient(135deg,#2a2520,#1a1510); }
+    .bg-c2 { background: linear-gradient(135deg,#201a2a,#10101a); }
+    .bg-c3 { background: linear-gradient(135deg,#1a2520,#101a15); }
+
+    /* SVG wallet placeholder */
+    .img-placeholder {
+      width: 100%; height: 100%; min-height: 160px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .img-placeholder svg { opacity: 0.6; }
+  </style>
+</head>
+<body class="has-bg">
+  <nav class="navbar">
+    <ul class="nav-pill">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="report-form.html">Report Form</a></li>
+      <li><a href="item-list.html" class="active">Item List Page</a></li>
+      <li><a href="item-detail.html">Item Detail Page</a></li>
+      <li><a href="my-reports.html">My Reports</a></li>
+      <li><a href="heatmap.html">Campus Heatmap</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.5"/><path d="M14 14L18 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" id="searchInput" placeholder="AI Powered Search" oninput="filterCards(this.value)">
+      </div>
+      <button class="btn-login">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Login / Sign Up</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="page-body">
+    <!-- filter bar -->
+    <div class="filter-bar anim">
+      <h1>All Reported Items</h1>
+      <button class="filter-btn active" onclick="setFilter(this,'all')">All</button>
+      <button class="filter-btn" onclick="setFilter(this,'lost')">Lost</button>
+      <button class="filter-btn" onclick="setFilter(this,'found')">Found</button>
+      <select class="filter-select" onchange="sortCards(this.value)">
+        <option value="newest">Newest First</option>
+        <option value="oldest">Oldest First</option>
+      </select>
+    </div>
+
+    <!-- item grid -->
+    <div class="items-grid" id="itemsGrid">
+      <!-- Dynamically populated via JS -->
+    </div><!-- end grid -->
+
+    <!-- pagination -->
+    <div class="pagination">
+      <button class="pg-btn">←</button>
+      <button class="pg-btn active">1</button>
+      <button class="pg-btn">2</button>
+      <button class="pg-btn">3</button>
+      <button class="pg-btn">→</button>
+    </div>
+  </div>
+
+  <script src="api/client.js"></script>
+  <script>
+    // State
+    let allItems = [];
+    let currentFilter = 'all';
+    let currentSort = 'newest';
+
+    // Render items grid from API data
+    function renderItems(items) {
+      const grid = document.getElementById('itemsGrid');
+      if (!items || items.length === 0) {
+        grid.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:40px;">No items found</p>';
+        return;
+      }
+
+      grid.innerHTML = items.map((item, index) => {
+        const isLost = item.type === 'LOST';
+        const badgeClass = isLost ? 'badge-lost' : 'badge-found';
+        const bgClass = ['bg-c1', 'bg-c2', 'bg-c3'][index % 3];
+        const timeAgo = utils.formatRelativeTime(item.lostDate || item.createdAt);
+
+        return `
+        <div class="item-card anim d${(index % 5) + 1}" data-status="${isLost ? 'lost' : 'found'}" onclick="window.location='item-detail.html?id=${item.id}'">
+          <div class="item-img-wrap ${bgClass}">
+            ${item.imageUrl ?
+              `<img src="${item.imageUrl}" alt="${item.title}">` :
+              `<div class="img-placeholder">
+                <svg width="80" height="60" viewBox="0 0 80 60" fill="none"><rect x="5" y="15" width="70" height="40" rx="6" fill="rgba(180,140,80,0.7)"/><rect x="5" y="15" width="70" height="12" rx="4" fill="rgba(160,100,50,0.6)"/><rect x="28" y="30" width="24" height="14" rx="3" fill="rgba(200,160,90,0.5)"/></svg>
+              </div>`
+            }
+            <div class="item-img-badge"><span class="badge ${badgeClass}"><span class="badge-dot"></span>${isLost ? 'Lost' : 'Found'}</span></div>
+          </div>
+          <div class="item-body">
+            <div class="item-name">${utils.escapeHTML(item.title)}</div>
+            <div class="item-loc">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="white" stroke-width="1.5"/></svg>
+              ${utils.escapeHTML(item.location)}
+            </div>
+          </div>
+          <div class="item-footer">
+            <span class="item-time">${timeAgo}</span>
+            <div class="item-actions">
+              <button class="btn btn-sm btn-accent" onclick="event.stopPropagation(); window.location='item-detail.html?id=${item.id}'">Claim</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Apply filters and sorting
+    function applyFiltersAndSort() {
+      let filtered = [...allItems];
+
+      // Apply type filter
+      if (currentFilter !== 'all') {
+        const typeFilter = currentFilter === 'lost' ? 'LOST' : 'FOUND';
+        filtered = filtered.filter(item => item.type === typeFilter);
+      }
+
+      // Apply sorting
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.lostDate || a.createdAt);
+        const dateB = new Date(b.lostDate || b.createdAt);
+        return currentSort === 'newest' ? dateB - dateA : dateA - dateB;
+      });
+
+      renderItems(filtered);
+    }
+
+    // Set filter button
+    function setFilter(btn, type) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = type;
+      applyFiltersAndSort();
+    }
+
+    // Filter by search query
+    function filterCards(q) {
+      if (!q.trim()) {
+        renderItems(allItems);
+        return;
+      }
+      const filtered = allItems.filter(item =>
+        item.title.toLowerCase().includes(q.toLowerCase()) ||
+        item.description.toLowerCase().includes(q.toLowerCase()) ||
+        item.location.toLowerCase().includes(q.toLowerCase())
+      );
+      renderItems(filtered);
+    }
+
+    // Sort items
+    function sortCards(order) {
+      currentSort = order;
+      applyFiltersAndSort();
+    }
+
+    // Load items from API on page load
+    async function loadItems() {
+      try {
+        const data = await api.getItems({ limit: 50 });
+        allItems = data.items || [];
+        
+        // Parse search query from URL
+        const params = new URLSearchParams(window.location.search);
+        const q = params.get('q');
+        if (q) {
+          const searchInput = document.getElementById('searchInput');
+          if (searchInput) searchInput.value = q;
+          filterCards(q);
+        } else {
+          renderItems(allItems);
+        }
+      } catch (error) {
+        console.error('Failed to load items:', error);
+        document.getElementById('itemsGrid').innerHTML =
+          '<p style="color:var(--lost-color);text-align:center;padding:40px;">Failed to load items. Please try again later.</p>';
+      }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', loadItems);
+  </script>
+</body>
+</html>

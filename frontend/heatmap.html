@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind — Heatmap</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon%201.png">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    .heatmap-layout {
+      position: relative;
+      height: calc(100vh - var(--nav-h) - 40px);
+      border-radius: var(--r-card);
+      overflow: hidden;
+      border: 0.5px solid var(--glass-b);
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    .heatmap-overlay {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      /* Float securely above Leaflet map panes with strong opacity backglass */
+      background: rgba(14, 18, 14, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 22px;
+      border-radius: var(--r-card);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      z-index: 1000;
+      min-width: 280px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .heatmap-overlay h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+    }
+    .heatmap-overlay .legend {
+      font-family: var(--font-b);
+      font-size: 13px;
+      color: var(--text-soft);
+      margin-top: 14px;
+    }
+    .legend-gradient {
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(to right, rgba(0, 255, 255, 0), rgba(0, 255, 255, 1), rgba(0, 191, 255, 1), rgba(0, 127, 255, 1), rgba(0, 63, 255, 1), rgba(0, 0, 255, 1), rgba(0, 0, 223, 1), rgba(0, 0, 191, 1), rgba(0, 0, 159, 1), rgba(0, 0, 127, 1), rgba(63, 0, 91, 1), rgba(127, 0, 63, 1), rgba(191, 0, 31, 1), rgba(255, 0, 0, 1));
+      border-radius: 4px;
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body class="has-bg">
+  <nav class="navbar">
+    <ul class="nav-pill">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="report-form.html">Report Form</a></li>
+      <li><a href="item-list.html">Item List Page</a></li>
+      <li><a href="item-detail.html">Item Detail Page</a></li>
+      <li><a href="my-reports.html">My Reports</a></li>
+      <li><a href="heatmap.html" class="active">Campus Heatmap</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.5"/><path d="M14 14L18 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="AI Powered Search" onkeydown="if(event.key === 'Enter') window.location.href='item-list.html?q=' + encodeURIComponent(this.value)">
+      </div>
+      <button class="btn-login">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Login / Sign Up</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="page-body">
+    <div class="heatmap-layout anim">
+      <div class="heatmap-overlay">
+        <h2>Campus Heatmap</h2>
+        <p style="font-size:12px; color:var(--text-dim);">Live visualization of lost and found hotspots across the campus grounds.</p>
+        <div class="legend">
+          Heat Intensity
+          <div class="legend-gradient"></div>
+          <div class="legend-labels">
+            <span>Low</span>
+            <span>High</span>
+          </div>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <script src="api/client.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+  <script>
+    const centerPoint = [24.7471, 92.8303]; // Lat, Lng
+    let map, heat;
+
+    async function loadLeafletMap() {
+      // Create map
+      map = L.map('map', {
+        center: centerPoint,
+        zoom: 16,
+        zoomControl: false // Keep the UI sleek and clean
+      });
+
+      // Add CartoDB Dark Matter tiles (Free, beautiful dark themed OpenStreetMap)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 20
+      }).addTo(map);
+
+      // Define gradient matching the UI legend
+      const heatGradient = {
+        0.0: 'transparent',
+        0.2: 'cyan',
+        0.4: 'dodgerblue',
+        0.6: 'blue',
+        0.8: 'purple',
+        1.0: 'red'
+      };
+
+      const realPoints = await getRealPoints();
+
+      // Add Heatmap layer
+      heat = L.heatLayer(realPoints, {
+        radius: 35,
+        blur: 25,
+        maxZoom: 17,
+        gradient: heatGradient
+      }).addTo(map);
+    }
+
+    // Read database and extract exact coordinates using RegEx
+    async function getRealPoints() {
+      const points = [];
+      try {
+        const data = await api.getItems({ limit: 1000 });
+        const items = data.items || [];
+        
+        // Regex to extract (XX.XXXXX, YY.YYYYY) from the item's location string
+        const coordRegex = /\(([-+]?[0-9]*\.?[0-9]+),\s*([-+]?[0-9]*\.?[0-9]+)\)/;
+        
+        items.forEach(item => {
+          if (item.location) {
+            const match = item.location.match(coordRegex);
+            if (match) {
+              const lat = parseFloat(match[1]);
+              const lng = parseFloat(match[2]);
+              
+              // We'll give Lost items slightly more thermal intensity (0.9) than Found items (0.6)
+              const intensity = item.type === 'LOST' ? 0.9 : 0.6;
+              points.push([lat, lng, intensity]); 
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Failed to load real coordinates", err);
+      }
+
+      // If database has 0 items with GPS data, drop a faint mock point so UI isn't totally blank
+      if (points.length === 0) {
+         points.push([centerPoint[0], centerPoint[1], 0.1]);
+      }
+      
+      return points;
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', loadLeafletMap);
+  </script>
+</body>
+</html>

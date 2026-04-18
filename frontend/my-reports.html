@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind — My Reports</title>
+  <link rel="icon" type="image/png" href="assets/images/favicon%201.png">
+  <link rel="stylesheet" href="styles/common.css">
+  <style>
+    .reports-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+      align-items: start;
+      height: calc(100vh - var(--nav-h) - 60px);
+    }
+
+    /* ── LEFT: REPORTS LIST ──────────────────── */
+    .reports-list-panel {
+      height: 100%;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .reports-list-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 18px 14px; flex-shrink: 0;
+    }
+    .reports-list-header h2 { font-size: 16px; font-weight: 700; }
+    .reports-list-header span {
+      font-family: var(--font-b); font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .reports-scroll {
+      overflow-y: auto;
+      flex: 1;
+      padding: 0 8px 12px;
+    }
+
+    /* individual report row */
+    .report-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.18s;
+      position: relative;
+    }
+    .report-row:hover { background: rgba(255,255,255,0.05); }
+    .report-row.active { background: rgba(255,255,255,0.08); }
+
+    /* colour strip on left edge */
+    .report-strip {
+      width: 3px; height: 38px; border-radius: 2px; flex-shrink: 0;
+    }
+    .strip-lost   { background: var(--lost-color); }
+    .strip-found  { background: var(--found-color); }
+    .strip-closed { background: var(--text-dim); }
+
+    .report-info { flex: 1; min-width: 0; }
+    .report-item-name {
+      font-size: 13px; font-weight: 600; color: var(--white);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .report-meta {
+      font-family: var(--font-b); font-size: 11px;
+      color: var(--text-muted); margin-top: 3px;
+    }
+
+    .report-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+    .report-time  { font-family: var(--font-b); font-size: 10.5px; color: var(--text-dim); }
+
+    /* unread dot */
+    .unread-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* ── RIGHT: CHAT PANEL ───────────────────── */
+    .chat-panel {
+      height: 100%;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 20px 16px; flex-shrink: 0;
+      border-bottom: 0.5px solid var(--glass-b);
+    }
+    .chat-avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(168,197,160,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; color: var(--accent);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .chat-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .chat-name { font-size: 15px; font-weight: 600; }
+    .chat-sub  { font-family: var(--font-b); font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+    .chat-header-actions { margin-left: auto; display: flex; gap: 8px; }
+
+    /* messages area */
+    .chat-messages {
+      flex: 1; overflow-y: auto;
+      padding: 20px 20px 12px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    .msg {
+      display: flex; flex-direction: column;
+      max-width: 72%;
+    }
+    .msg.mine { align-self: flex-end; align-items: flex-end; }
+    .msg.theirs { align-self: flex-start; align-items: flex-start; }
+
+    .msg-bubble {
+      padding: 10px 14px; border-radius: 14px;
+      font-family: var(--font-b); font-size: 13.5px; font-weight: 300;
+      line-height: 1.5;
+    }
+    .msg.mine .msg-bubble {
+      background: rgba(168,197,160,0.18); border: 0.5px solid rgba(168,197,160,0.3);
+      color: var(--white); border-bottom-right-radius: 4px;
+    }
+    .msg.theirs .msg-bubble {
+      background: rgba(255,255,255,0.07); border: 0.5px solid var(--glass-b);
+      color: var(--text-soft); border-bottom-left-radius: 4px;
+    }
+    .msg-time {
+      font-family: var(--font-b); font-size: 10px; color: var(--text-dim);
+      margin-top: 4px; padding: 0 4px;
+    }
+
+    /* system message */
+    .msg-system {
+      text-align: center;
+      font-family: var(--font-b); font-size: 11px; color: var(--text-dim);
+      padding: 4px 0;
+    }
+
+    /* shared item card in chat */
+    .msg-item-card {
+      background: var(--inp-bg); border: 0.5px solid var(--inp-b);
+      border-radius: 12px; padding: 12px 14px; margin-bottom: 4px;
+      display: flex; align-items: center; gap: 12px; max-width: 280px;
+    }
+    .msg-item-thumb {
+      width: 44px; height: 44px; border-radius: 8px;
+      background: linear-gradient(135deg,#2a2520,#1a1510);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .msg-item-info { flex: 1; min-width: 0; }
+    .msg-item-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .msg-item-loc  { font-family: var(--font-b); font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    /* chat input area */
+    .chat-input-area {
+      display: flex; align-items: flex-end; gap: 10px;
+      padding: 14px 20px 18px; flex-shrink: 0;
+      border-top: 0.5px solid var(--glass-b);
+    }
+    .chat-input {
+      flex: 1;
+      background: var(--inp-bg); border: 0.5px solid var(--inp-b);
+      border-radius: 20px; padding: 11px 16px;
+      color: var(--white); font-family: var(--font-b); font-size: 13.5px;
+      outline: none; resize: none; max-height: 100px; min-height: 42px;
+      transition: border-color 0.2s;
+      line-height: 1.4;
+    }
+    .chat-input:focus { border-color: var(--inp-focus); }
+    .chat-input::placeholder { color: rgba(255,255,255,0.28); }
+
+    .send-btn {
+      width: 42px; height: 42px; border-radius: 50%;
+      background: rgba(168,197,160,0.2);
+      border: 0.5px solid rgba(168,197,160,0.45);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background 0.2s, transform 0.15s; flex-shrink: 0;
+    }
+    .send-btn:hover { background: rgba(168,197,160,0.35); transform: scale(1.05); }
+    .send-btn svg { opacity: 0.85; }
+
+    /* ── EMPTY STATE ─────────────────────────── */
+    .empty-chat {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; padding: 40px;
+    }
+    .empty-chat svg { opacity: 0.25; }
+    .empty-chat p { font-family: var(--font-b); font-size: 14px; color: var(--text-muted); text-align: center; }
+
+    @media (max-width: 860px) {
+      .reports-layout { grid-template-columns: 1fr; height: auto; }
+      .reports-list-panel, .chat-panel { height: auto; max-height: 60vh; }
+    }
+  </style>
+</head>
+<body class="has-bg">
+  <nav class="navbar">
+    <ul class="nav-pill">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="report-form.html">Report Form</a></li>
+      <li><a href="item-list.html">Item List Page</a></li>
+      <li><a href="item-detail.html">Item Detail Page</a></li>
+      <li><a href="my-reports.html" class="active">My Reports</a></li>
+      <li><a href="heatmap.html">Campus Heatmap</a></li>
+    </ul>
+    <div class="nav-right">
+      <div class="search-bar">
+        <svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="white" stroke-width="1.5"/><path d="M14 14L18 18" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="AI Powered Search" onkeydown="if(event.key === 'Enter') window.location.href='item-list.html?q=' + encodeURIComponent(this.value)">
+      </div>
+      <button class="btn-login">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="white" stroke-width="1.6"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="white" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span>Login / Sign Up</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="page-body" style="padding-top:16px;">
+    <div class="reports-layout anim">
+
+      <!-- LEFT: REPORTS LIST -->
+      <div class="glass-card reports-list-panel">
+        <div class="reports-list-header">
+          <div>
+            <h2>My Reports</h2>
+            <span id="reportsTotalCount">Loading...</span>
+          </div>
+        </div>
+        <div class="reports-scroll" id="reportsList">
+
+          <div class="report-row active" onclick="selectReport(this, 0)">
+            <div class="report-strip strip-lost"></div>
+            <div class="report-info">
+              <div class="report-item-name">Black Leather Wallet</div>
+              <div class="report-meta">Lost · Main Library</div>
+            </div>
+            <div class="report-right">
+              <span class="report-time">2h ago</span>
+              <div class="unread-dot"></div>
+            </div>
+          </div>
+
+          <div class="report-row" onclick="selectReport(this, 1)">
+            <div class="report-strip strip-found"></div>
+            <div class="report-info">
+              <div class="report-item-name">Student ID Card</div>
+              <div class="report-meta">Found · Canteen B</div>
+            </div>
+            <div class="report-right">
+              <span class="report-time">5h ago</span>
+            </div>
+          </div>
+
+          <div class="report-row" onclick="selectReport(this, 2)">
+            <div class="report-strip strip-lost"></div>
+            <div class="report-info">
+              <div class="report-item-name">Blue Wireless Earbuds</div>
+              <div class="report-meta">Lost · Lecture Hall C</div>
+            </div>
+            <div class="report-right">
+              <span class="report-time">Yesterday</span>
+              <div class="unread-dot"></div>
+            </div>
+          </div>
+
+          <div class="report-row" onclick="selectReport(this, 3)">
+            <div class="report-strip strip-found"></div>
+            <div class="report-info">
+              <div class="report-item-name">Silver Wristwatch</div>
+              <div class="report-meta">Found · Sports Complex</div>
+            </div>
+            <div class="report-right">
+              <span class="report-time">Yesterday</span>
+            </div>
+          </div>
+
+          <div class="report-row" onclick="selectReport(this, 4)">
+            <div class="report-strip strip-lost"></div>
+            <div class="report-info">
+              <div class="report-item-name">Grey Hoodie — NIT</div>
+              <div class="report-meta">Lost · Admin Block</div>
+            </div>
+            <div class="report-right">
+              <span class="report-time">2d ago</span>
+            </div>
+          </div>
+
+          <div class="report-row" onclick="selectReport(this, 5)">
+            <div class="report-strip strip-closed"></div>
+            <div class="report-info">
+              <div class="report-item-name">Prescription Glasses</div>
+              <div class="report-meta">Closed · Resolved</div>
+            </div>
+            <div class="report-right">
+              <span class="report-time">2d ago</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- RIGHT: CHAT -->
+      <div class="glass-card chat-panel" id="chatPanel">
+
+        <!-- chat header -->
+        <div class="chat-header">
+          <div class="chat-avatar">
+            <!-- Replace src with real user photo -->
+            <img src="" alt="RS" onerror="this.style.display='none';this.parentElement.textContent='RS'">
+          </div>
+          <div>
+            <div class="chat-name">Rahul Sharma</div>
+            <div class="chat-sub">Re: Black Leather Wallet · Lost</div>
+          </div>
+          <div class="chat-header-actions">
+            <span class="badge badge-lost"><span class="badge-dot"></span>Lost</span>
+            <button class="btn btn-sm btn-accent" onclick="window.location='item-detail.html'">View Item</button>
+          </div>
+        </div>
+
+        <!-- messages -->
+        <div class="chat-messages" id="chatMessages">
+
+        </div>
+
+        <!-- input -->
+        <div class="chat-input-area" id="chatInputArea" style="display: none;">
+          <textarea
+            class="chat-input"
+            id="msgInput"
+            placeholder="Type a message..."
+            rows="1"
+            onkeydown="handleEnter(event)"
+          ></textarea>
+          <button class="send-btn" onclick="sendMessage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+      </div><!-- end chat panel -->
+
+    </div>
+  </div>
+
+  <script src="api/client.js"></script>
+  <script>
+    // State
+    let userReports = [];
+    let currentReport = null;
+    let currentItemClaims = [];
+
+    // Fetch user's reports from API
+    async function loadUserReports() {
+      const user = api.getCurrentUser();
+      if (!user) {
+        document.getElementById('reportsList').innerHTML = '<p style="color:var(--text-muted);padding:20px;">Please login to view your reports.</p>';
+        return;
+      }
+      
+      try {
+        const data = await api.getItems({ limit: 100 });
+        const allItems = data.items || [];
+        
+        // Items I reported
+        const reportedItems = allItems.filter(item => item.reporterId === user.id);
+
+        // Items I claimed
+        const claims = await api.getClaimsByUser(user.id);
+        const claimedItemIds = claims.map(c => c.itemId);
+        // Exclude items I reported to avoid duplicates
+        const claimedItems = allItems.filter(item => claimedItemIds.includes(item.id) && item.reporterId !== user.id);
+
+        userReports = [...reportedItems, ...claimedItems];
+
+        const headerDiv = document.querySelector('.reports-list-header');
+        if (headerDiv) {
+          document.getElementById('reportsTotalCount').textContent = `${userReports.length} total`;
+          
+          // add trust score if not already there
+          if (!document.getElementById('trustScoreDisplay')) {
+             const ts = document.createElement('div');
+             ts.id = 'trustScoreDisplay';
+             ts.style.cssText = "font-size: 11px; font-weight: 600; color: #ffd700; background: rgba(255,215,0,0.15); padding: 4px 8px; border-radius: 6px;";
+             ts.innerHTML = `⭐ Score: ${user.trustScore || 95}`;
+             headerDiv.appendChild(ts);
+          } else {
+             document.getElementById('trustScoreDisplay').innerHTML = `⭐ Score: ${user.trustScore || 95}`;
+          }
+        }
+
+        renderReportsList();
+      } catch (error) {
+        console.error('Failed to load reports:', error);
+        document.getElementById('reportsList').innerHTML =
+          '<p style="color:var(--text-muted);padding:20px;">Failed to load reports</p>';
+      }
+    }
+
+    // Render reports list
+    function renderReportsList() {
+      const container = document.getElementById('reportsList');
+      if (!userReports || userReports.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-muted);padding:20px;">No reports yet</p>';
+        return;
+      }
+
+      container.innerHTML = userReports.map((report, idx) => {
+        const user = api.getCurrentUser();
+        const isMyClaim = user && report.reporterId !== user.id;
+        const roleText = isMyClaim ? 'My Claim' : (report.type === 'LOST' ? 'Lost' : 'Found');
+        
+        const isLost = report.type === 'LOST';
+        const statusClass = report.status === 'RESOLVED' ? 'strip-closed' : (isLost ? 'strip-lost' : 'strip-found');
+        const timeAgo = utils.formatRelativeTime(report.createdAt);
+        const hasUnread = report.status === 'PENDING_CLAIM';
+
+        return `
+        <div class="report-row ${idx === 0 ? 'active' : ''}" onclick="selectReport(this, ${idx})">
+          <div class="report-strip ${statusClass}"></div>
+          <div class="report-info">
+            <div class="report-item-name">${utils.escapeHTML(report.title)}</div>
+            <div class="report-meta">${roleText} · ${utils.escapeHTML(report.location)}</div>
+          </div>
+          <div class="report-right">
+            <span class="report-time">${timeAgo}</span>
+            ${hasUnread ? '<div class="unread-dot"></div>' : ''}
+          </div>
+        </div>`;
+      }).join('');
+
+      // Load first report by default
+      if (userReports.length > 0) {
+        selectReport(container.querySelector('.report-row'), 0);
+      }
+    }
+
+    // Select a report and show its chat
+    function selectReport(el, idx) {
+      document.querySelectorAll('.report-row').forEach(r => r.classList.remove('active'));
+      el.classList.add('active');
+
+      // Remove unread dot
+      const dot = el.querySelector('.unread-dot');
+      if (dot) dot.remove();
+
+      currentReport = userReports[idx];
+      if (!currentReport) return;
+
+      const isLost = currentReport.type === 'LOST';
+      const user = api.getCurrentUser();
+      const isReporter = user && currentReport.reporterId === user.id;
+
+      // Update chat header
+      document.querySelector('.chat-name').textContent = isReporter ? 'Claimant' : 'Reporter';
+      document.querySelector('.chat-sub').textContent = `Re: ${currentReport.title} · ${isLost ? 'Lost' : 'Found'}`;
+
+      // Update badge in header
+      const badge = document.querySelector('.chat-header-actions .badge');
+      if (badge) {
+        badge.className = `badge ${isLost ? 'badge-lost' : 'badge-found'}`;
+        badge.innerHTML = `<span class="badge-dot"></span>${isLost ? 'Lost' : 'Found'}`;
+      }
+
+      // Load chat/messages for this report
+      loadChatForReport(currentReport);
+    }
+
+    // Load chat for selected report
+    async function loadChatForReport(report) {
+      const chatMessages = document.getElementById('chatMessages');
+      chatMessages.innerHTML = '<div class="msg-system">Loading claims...</div>';
+      
+      try {
+        // Fetch real claims for this item
+        const claimsResponse = await api.getClaimsForItem(report.id);
+        currentItemClaims = claimsResponse.claims || claimsResponse || [];
+      } catch (e) {
+        console.error("Failed to load claims", e);
+        currentItemClaims = [];
+      }
+
+      const user = api.getCurrentUser();
+      const isReporter = user && report.reporterId === user.id;
+      
+      let activeClaim = null;
+      if (isReporter) {
+          activeClaim = currentItemClaims.find(c => c.status === 'PENDING' || c.status === 'APPROVED');
+      } else if (user) {
+          activeClaim = currentItemClaims.find(c => c.claimantId === user.id);
+      }
+
+      window.currentActiveClaim = activeClaim || null;
+      
+      let chatHTML = `<div class="msg-system">${utils.formatDate(report.createdAt)}</div>`;
+      
+      chatHTML += `
+        <div class="msg theirs">
+          <div class="msg-item-card">
+            <div class="msg-item-thumb">
+              <svg width="28" height="22" viewBox="0 0 28 22"><rect x="2" y="4" width="24" height="14" rx="4" fill="rgba(180,140,80,0.6)"/></svg>
+            </div>
+            <div class="msg-item-info">
+              <div class="msg-item-name">${utils.escapeHTML(report.title)}</div>
+              <div class="msg-item-loc">${utils.escapeHTML(report.location)}</div>
+            </div>
+          </div>
+          <div class="msg-bubble">
+            ${isReporter
+              ? `I reported this item.`
+              : `I have submitted a claim for this item.`
+            }
+          </div>
+        </div>
+      `;
+
+      if (activeClaim) {
+        chatHTML += `
+          <div class="msg system" style="margin-top: 15px;">
+            <div class="msg-bubble" style="background: rgba(255,200,100,0.1); border: 1px solid rgba(255,200,100,0.2);">
+              <strong>Claim Submitted</strong><br>
+              <em style="color: var(--text-soft)">"${utils.escapeHTML(activeClaim.description || 'No description provided')}"</em>
+            </div>
+          </div>
+        `;
+        
+        // If the current user is the reporter, they can approve or reject the claim
+        if (user && report.reporterId === user.id && activeClaim.status === 'PENDING') {
+          chatHTML += `
+            <div class="msg-system" style="margin-top: 10px;">
+              <button class="btn btn-sm btn-solid" style="margin-right: 8px;" onclick="handleClaimAction('${activeClaim.id}', 'reject')">Reject</button>
+              <button class="btn btn-sm btn-accent" onclick="handleClaimAction('${activeClaim.id}', 'approve')">Approve Match</button>
+            </div>
+          `;
+        } else if (activeClaim.status === 'APPROVED') {
+          chatHTML += `<div class="msg-system" style="color: #a8c5a0; margin-top:10px;">Goal Resolved! The claim was approved.</div>`;
+        }
+
+        // FETCH REAL MESSAGES FROM DB
+        try {
+           const messages = await api.getMessages(activeClaim.id);
+           messages.forEach(msg => {
+              const isMine = user && msg.senderId === user.id;
+              const time = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              chatHTML += `
+                <div class="msg ${isMine ? 'mine' : 'theirs'}" style="margin-top: 10px;">
+                  <div class="msg-bubble">${utils.escapeHTML(msg.text)}</div>
+                  <div class="msg-time">${time}</div>
+                </div>
+              `;
+           });
+        } catch (e) {
+           console.error("Message load failed", e);
+        }
+
+        // Enable chat inputs
+        document.getElementById('chatInputArea').style.display = 'flex';
+
+      } else {
+        // No active claim present, restrict chatting
+        chatHTML += `
+           <div class="empty-chat" style="margin-top: 20px;">
+             <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+             <p>Hi there! No approved or pending claims are actively chatting for this item yet.<br><br>The secure chat channel will automatically unlock as soon as a claim is placed.</p>
+           </div>
+        `;
+        document.getElementById('chatInputArea').style.display = 'none';
+      }
+
+      // Fetch Intelligent Matches
+      try {
+        let aiMatches = [];
+        if (report.type === 'LOST') aiMatches = await api.getMatchesForLostItem(report.id);
+        else aiMatches = await api.getMatchesForFoundItem(report.id);
+
+        if (aiMatches && aiMatches.length > 0) {
+          chatHTML += `<div class="msg-system" style="color: #64b5f6; margin-top:20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top:15px; text-transform:uppercase; font-size:10px; font-weight:700;">✨ Intelligent Matching Activated </div>`;
+          aiMatches.forEach(match => {
+            const matchItem = report.type === 'LOST' ? match.foundItem : match.lostItem;
+            chatHTML += `
+              <div class="msg theirs" style="margin-top: 10px; justify-content: center; width: 100%;">
+                <div class="msg-bubble" style="border: 1px dashed #64b5f6; background: rgba(100, 181, 246, 0.05); padding: 15px; border-radius: 6px; width: 80%;">
+                  <strong style="color: #90caf9; font-size:14px; display:block; margin-bottom:4px;">AI Potential Match: ${utils.escapeHTML(matchItem.title)}</strong>
+                  <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px;">Confidence Score: ${match.confidenceScore} pts</div>
+                  <div style="font-size: 12px; margin-bottom: 12px;"><strong>Location:</strong> ${utils.escapeHTML(matchItem.location)}</div>
+                  <button class="btn btn-sm btn-solid" style="background: rgba(100, 181, 246, 0.2); color: #90caf9;" onclick="window.location='item-detail.html?id=${matchItem.id}'">View Candidate Item</button>
+                </div>
+              </div>
+            `;
+          });
+        }
+      } catch (e) {
+        console.error("Match engine failed", e);
+      }
+
+      chatMessages.innerHTML = chatHTML;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    async function handleClaimAction(claimId, action) {
+      const user = api.getCurrentUser();
+      const notes = prompt(`Please provide any notes for ${action}ing this claim:`);
+      try {
+        if (action === 'approve') await api.approveClaim(claimId, user.id, notes || 'Approved match.');
+        else await api.rejectClaim(claimId, user.id, notes || 'Claim rejected.');
+        alert(`Claim ${action}d successfully.`);
+        if (currentReport) loadChatForReport(currentReport);
+      } catch (err) {
+        console.error(err);
+        alert(`Failed to ${action} claim: ` + err.message);
+      }
+    }
+
+    // Send message securely to DB
+    async function sendMessage() {
+      const input = document.getElementById('msgInput');
+      const text = input.value.trim();
+      if (!text || !currentReport || !window.currentActiveClaim) return;
+
+      const user = api.getCurrentUser();
+      if (!user) return;
+
+      try {
+        await api.sendMessage(window.currentActiveClaim.id, text, user.id);
+        
+        input.value = '';
+        input.style.height = 'auto';
+        
+        // Reload chat dynamically to show the newly inserted message
+        loadChatForReport(currentReport);
+      } catch (e) {
+        alert("Failed to send message: " + e.message);
+      }
+    }
+
+    function handleEnter(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    }
+
+    // Auto-grow textarea
+    document.getElementById('msgInput').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+    });
+
+    function escapeHTML(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', loadUserReports);
+  </script>
+</body>
+</html>
