@@ -86,7 +86,7 @@ Since the application uses an encapsulated mock API client leveraging `localStor
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/FindInCampus.git
+   git clone https://github.com/aspartic-gthb/FindInCampus.git
    cd FindInCampus
    ```
 2. **Launch with a Local Web Server:**
