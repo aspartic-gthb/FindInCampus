@@ -145,6 +145,12 @@ const api = {
       createdAt: new Date().toISOString()
     };
     localDB.claims.push(newClaim);
+
+    const item = localDB.items.find(i => i.id === claimData.itemId);
+    if (item && item.status === 'OPEN') {
+      item.status = 'PENDING_CLAIM';
+    }
+
     saveDB();
     return newClaim;
   },
@@ -184,6 +190,15 @@ const api = {
     claim.status = 'REJECTED';
     claim.reviewedBy = reviewedBy;
     claim.verificationNotes = notes;
+
+    const item = localDB.items.find(i => i.id === claim.itemId);
+    if (item && item.status === 'PENDING_CLAIM') {
+       const otherPending = localDB.claims.some(c => c.itemId === claim.itemId && c.status === 'PENDING');
+       if (!otherPending) {
+          item.status = 'OPEN';
+       }
+    }
+
     saveDB();
     return claim;
   },

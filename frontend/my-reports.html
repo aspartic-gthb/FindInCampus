@@ -417,7 +417,7 @@
         const isLost = report.type === 'LOST';
         const statusClass = report.status === 'RESOLVED' ? 'strip-closed' : (isLost ? 'strip-lost' : 'strip-found');
         const timeAgo = utils.formatRelativeTime(report.createdAt);
-        const hasUnread = report.status === 'PENDING_CLAIM';
+        const hasUnread = (report.status === 'PENDING_CLAIM' || report.status === 'PENDING') && !isMyClaim;
 
         return `
         <div class="report-row ${idx === 0 ? 'active' : ''}" onclick="selectReport(this, ${idx})">
@@ -538,6 +538,8 @@
           `;
         } else if (activeClaim.status === 'APPROVED') {
           chatHTML += `<div class="msg-system" style="color: #a8c5a0; margin-top:10px;">Goal Resolved! The claim was approved.</div>`;
+        } else if (activeClaim.status === 'REJECTED') {
+          chatHTML += `<div class="msg-system" style="color: #e57373; margin-top:10px;">This claim was rejected.</div>`;
         }
 
         // FETCH REAL MESSAGES FROM DB
@@ -557,8 +559,12 @@
            console.error("Message load failed", e);
         }
 
-        // Enable chat inputs
-        document.getElementById('chatInputArea').style.display = 'flex';
+        // Enable chat inputs unless rejected
+        if (activeClaim.status !== 'REJECTED') {
+           document.getElementById('chatInputArea').style.display = 'flex';
+        } else {
+           document.getElementById('chatInputArea').style.display = 'none';
+        }
 
       } else {
         // No active claim present, restrict chatting
@@ -604,11 +610,24 @@
     async function handleClaimAction(claimId, action) {
       const user = api.getCurrentUser();
       const notes = prompt(`Please provide any notes for ${action}ing this claim:`);
+      if (notes === null) return;
       try {
         if (action === 'approve') await api.approveClaim(claimId, user.id, notes || 'Approved match.');
         else await api.rejectClaim(claimId, user.id, notes || 'Claim rejected.');
         alert(`Claim ${action}d successfully.`);
-        if (currentReport) loadChatForReport(currentReport);
+        
+        const activeReportId = currentReport ? currentReport.id : null;
+        await loadUserReports();
+        
+        if (activeReportId) {
+           const newIdx = userReports.findIndex(r => r.id === activeReportId);
+           if (newIdx !== -1) {
+              const rowElems = document.querySelectorAll('.report-row');
+              if (rowElems[newIdx]) {
+                 selectReport(rowElems[newIdx], newIdx);
+              }
+           }
+        }
       } catch (err) {
         console.error(err);
         alert(`Failed to ${action} claim: ` + err.message);
