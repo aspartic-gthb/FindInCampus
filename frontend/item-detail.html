@@ -236,7 +236,7 @@
         </div>
         <div class="detail-row">
           <span class="detail-key">Name</span>
-          <span class="detail-val">Rahul Sharma</span>
+          <span class="detail-val">Loading...</span>
         </div>
         <div class="detail-row">
           <span class="detail-key">Location</span>
@@ -265,10 +265,10 @@
 
         <!-- reporter -->
         <div class="reporter-chip">
-          <div class="reporter-avatar">RS</div>
+          <div class="reporter-avatar">--</div>
           <div>
-            <div class="reporter-name">Rahul Sharma <span class="trust-badge" style="font-size: 10px; background: rgba(255,215,0,0.15); color: #ffd700; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">⭐ Trust Score: 95</span></div>
-            <div class="reporter-sub">B.Tech CSE · 3rd Year</div>
+            <div class="reporter-name">Loading...</div>
+            <div class="reporter-sub">Loading...</div>
           </div>
           <button class="btn btn-sm" style="margin-left:auto" onclick="openChat()">Chat</button>
         </div>
@@ -281,6 +281,11 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="white" stroke-width="1.6"/><circle cx="12" cy="9" r="2.5" stroke="white" stroke-width="1.4"/></svg>
           </button>
         </div>
+
+        <div id="matchSuggestions" class="timeline" style="display:none; margin-top:20px;">
+          <div class="timeline-title">Potential Matches</div>
+          <div id="matchSuggestionsList"></div>
+        </div>
       </div>
 
     </div>
@@ -289,13 +294,17 @@
   <!-- Proof of Ownership Modal -->
   <div class="modal-overlay" id="claimModal" style="position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 9999 !important; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);">
     <div class="modal-card">
-      <h3 class="modal-title">Claim this Item</h3>
-      <p class="modal-desc">To securely claim this item, please provide a detailed description. Proof of ownership via image is optional but speeds up verification.</p>
-      <textarea id="claimDescription" class="form-textarea" placeholder="Describe unique features, contents, or how you lost it..." rows="4"></textarea>
-      <div style="margin-top: 8px;">
+      <h3 class="modal-title">Contextual Verification</h3>
+      <p class="modal-desc">To securely claim this item, please answer the following questions to verify ownership. An AI will compare your answers with the hidden details provided by the finder.</p>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <input type="text" class="form-input" id="claim-loc" placeholder="Where do you think you lost the item?">
+        <input type="text" class="form-input" id="claim-time" placeholder="Around what time did you last have it?">
+        <input type="text" class="form-input" id="claim-route" placeholder="Which route/building/hostel were you near?">
+        <input type="text" class="form-input" id="claim-action" placeholder="What were you doing before losing it?">
+        <textarea class="form-textarea" id="claim-unique" placeholder="Any unique identifying characteristics?" rows="2"></textarea>
+      </div>
+      <div style="margin-top: 8px; display: none;">
         <input type="file" id="claimImgInput" accept="image/*" style="display:none;">
-        <label for="claimImgInput" class="btn btn-solid upload-btn" style="font-size: 12px; padding: 10px;">📸 Upload Proof (Optional)</label>
-        <button type="button" class="btn btn-accent" id="claimAiBtn" style="display:none; font-size: 12px; padding: 10px; margin-left: 8px;" onclick="generateClaimAI()">✨ AI Scan Proof</button>
         <span class="file-name" id="claimFname" style="font-size: 11px; margin-left: 10px;"></span>
       </div>
       <div class="modal-actions">
@@ -343,11 +352,12 @@
       const statusEl = document.querySelector('.detail-row .detail-val');
       if (statusEl) {
         const statusLabels = {
-          'ACTIVE': isLost ? 'Reported Lost — Awaiting Claim' : 'Found Item — Unclaimed',
+          'OPEN': isLost ? 'Reported Lost — Awaiting Match' : 'Found Item — Unclaimed',
+          'ACTIVE': isLost ? 'Reported Lost — Awaiting Match' : 'Found Item — Unclaimed',
           'PENDING_CLAIM': 'Claim Pending Verification',
           'CLAIMED': 'Claimed — Awaiting Pickup',
           'RESOLVED': 'Resolved — Item Returned',
-          'EXPIRED': 'Expired'
+          'EXPIRED': 'Expired',
         };
         statusEl.textContent = statusLabels[item.status] || item.status;
       }
@@ -387,19 +397,24 @@
       const claimBtn = document.getElementById('claimBtn');
       const claimTitle = document.querySelector('.modal-title');
       const claimDesc = document.querySelector('.modal-desc');
-      const claimTextarea = document.getElementById('claimDescription');
+      const claimLoc = document.getElementById('claim-loc');
+      const claimTime = document.getElementById('claim-time');
       
       if (isLost) {
         if (claimBtn) claimBtn.textContent = 'I Found This Item';
-        if (claimTitle) claimTitle.textContent = 'I Found This Item';
-        if (claimDesc) claimDesc.textContent = 'To let the owner know you have their item, please provide details on where you found it. Proof via image is optional but helps verify the match.';
-        if (claimTextarea) claimTextarea.placeholder = 'Describe where you found it, its current condition, or attach a photo...';
+        if (claimTitle) claimTitle.textContent = 'Contextual Verification';
+        if (claimDesc) claimDesc.textContent = 'To verify you found this item, please provide details on where and when you found it. AI will cross-check this.';
+        if (claimLoc) claimLoc.placeholder = 'Where exactly did you find it?';
+        if (claimTime) claimTime.placeholder = 'Around what time did you find it?';
       } else {
         if (claimBtn) claimBtn.textContent = 'Claim This Item';
-        if (claimTitle) claimTitle.textContent = 'Claim this Item';
-        if (claimDesc) claimDesc.textContent = 'To securely claim this item, please provide a detailed description. Proof of ownership via image is optional but speeds up verification.';
-        if (claimTextarea) claimTextarea.placeholder = 'Describe unique features, contents, or how you lost it...';
+        if (claimTitle) claimTitle.textContent = 'Contextual Verification';
+        if (claimDesc) claimDesc.textContent = 'To securely claim this item, please answer the following questions to verify ownership. An AI will compare your answers with the hidden details provided by the finder.';
+        if (claimLoc) claimLoc.placeholder = 'Where do you think you lost the item?';
+        if (claimTime) claimTime.placeholder = 'Around what time did you last have it?';
       }
+
+      updateClaimButton(item);
 
       // Update main image if available
       if (item.imageUrl) {
@@ -460,6 +475,27 @@
         `;
       });
       container.innerHTML = html;
+    }
+
+    function updateClaimButton(item) {
+      const claimBtn = document.getElementById('claimBtn');
+      if (!claimBtn) return;
+      const user = api.getCurrentUser();
+      const notOpen = item.status !== 'OPEN';
+      const ownItem = user && utils.sameId(item.reporterId, user.id);
+
+      if (notOpen || ownItem) {
+        claimBtn.disabled = true;
+        claimBtn.style.opacity = '0.55';
+        claimBtn.style.cursor = 'not-allowed';
+        if (item.status === 'RESOLVED') claimBtn.textContent = 'Resolved';
+        else if (item.status === 'PENDING_CLAIM') claimBtn.textContent = 'Claim In Review';
+        else if (ownItem) claimBtn.textContent = 'Your Report';
+      } else {
+        claimBtn.disabled = false;
+        claimBtn.style.opacity = '1';
+        claimBtn.style.cursor = 'pointer';
+      }
     }
 
     // Thumbnail switching
@@ -544,8 +580,13 @@
         return;
       }
       
-      if (currentItem.reporterId === user.id) {
+      if (utils.sameId(currentItem.reporterId, user.id)) {
         alert("Wait a minute... You cannot claim an item you reported yourself!");
+        return;
+      }
+
+      if (currentItem.status !== 'OPEN') {
+        alert('This item is no longer open for claims.');
         return;
       }
       
@@ -556,9 +597,14 @@
       const user = api.getCurrentUser();
       if (!user) return closeClaimModal();
 
-      const description = document.getElementById('claimDescription').value.trim();
-      if (!description) {
-        alert("Please provide a description of the item.");
+      const lostLocation = document.getElementById('claim-loc').value.trim();
+      const lostTime = document.getElementById('claim-time').value.trim();
+      const route = document.getElementById('claim-route').value.trim();
+      const lastAction = document.getElementById('claim-action').value.trim();
+      const uniqueFeatures = document.getElementById('claim-unique').value.trim();
+
+      if (!lostLocation || !lostTime || !uniqueFeatures) {
+        alert("Please answer the required contextual questions (Location, Time, Unique Features).");
         return;
       }
 
@@ -566,15 +612,21 @@
         const claimData = {
           itemId: currentItem.id,
           claimantId: user.id,
-          description
+          lostLocation,
+          lostTime,
+          route,
+          lastAction,
+          uniqueFeatures
         };
 
-        // If you were uploading image proof, read file and attach as imageUrl data URL here.
-        // const file = document.getElementById('claimImgInput').files[0];
+        const res = await api.createClaim(claimData);
 
-        await api.createClaim(claimData);
-
-        alert('Claim submitted successfully! The reporter has been notified and will review your claim.');
+        if (res.status === 'REJECTED') {
+           alert('Verification Failed: AI determined a low confidence score based on your answers. Claim rejected.');
+        } else {
+           alert('Claim submitted successfully! The AI assigned a confidence score which the reporter will review.');
+        }
+        
         closeClaimModal();
         window.location = 'my-reports.html';
       } catch (error) {
@@ -593,6 +645,35 @@
       if (currentItem?.location) {
         const query = encodeURIComponent(currentItem.location);
         window.open(`https://maps.google.com/?q=${query}`, '_blank');
+      }
+    }
+
+    async function loadMatchSuggestions(item) {
+      const panel = document.getElementById('matchSuggestions');
+      const list = document.getElementById('matchSuggestionsList');
+      if (!panel || !list || !item?.id || item.status !== 'OPEN') return;
+
+      try {
+        const matches = item.type === 'LOST'
+          ? await api.getMatchesForLostItem(item.id)
+          : await api.getMatchesForFoundItem(item.id);
+
+        if (!matches.length) return;
+
+        panel.style.display = 'block';
+        list.innerHTML = matches.slice(0, 3).map(match => {
+          const other = item.type === 'LOST' ? match.foundItem : match.lostItem;
+          const score = match.confidenceScore ?? match.score ?? 0;
+          return `
+            <div style="padding:10px 0; border-bottom:0.5px solid rgba(255,255,255,0.08);">
+              <div style="font-size:13px;font-weight:600;color:var(--white);">${utils.escapeHTML(other.title)}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin:4px 0;">${score}% match · ${utils.escapeHTML(other.location)}</div>
+              <a href="item-detail.html?id=${other.id}" class="btn btn-sm btn-solid" style="margin-top:6px;">View item</a>
+            </div>
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('Failed to load matches', e);
       }
     }
 
@@ -627,6 +708,7 @@
           }
         }
         renderItem(item);
+        loadMatchSuggestions(item);
       } catch (error) {
         console.error('Failed to load item:', error);
         alert('Failed to load item details. The item may not exist.');

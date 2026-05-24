@@ -206,6 +206,7 @@
         const badgeClass = isLost ? 'badge-lost' : 'badge-found';
         const bgClass = ['bg-c1', 'bg-c2', 'bg-c3'][index % 3];
         const timeAgo = utils.formatRelativeTime(item.lostDate || item.createdAt);
+        const canClaim = item.status === 'OPEN';
 
         return `
         <div class="item-card anim d${(index % 5) + 1}" data-status="${isLost ? 'lost' : 'found'}" onclick="window.location='item-detail.html?id=${item.id}'">
@@ -228,7 +229,9 @@
           <div class="item-footer">
             <span class="item-time">${timeAgo}</span>
             <div class="item-actions">
-              <button class="btn btn-sm btn-accent" onclick="event.stopPropagation(); window.location='item-detail.html?id=${item.id}'">Claim</button>
+              ${canClaim
+                ? `<button class="btn btn-sm btn-accent" onclick="event.stopPropagation(); window.location='item-detail.html?id=${item.id}'">Claim</button>`
+                : `<span class="item-time" style="text-transform:capitalize;">${(item.status || '').replace('_', ' ').toLowerCase()}</span>`}
             </div>
           </div>
         </div>`;

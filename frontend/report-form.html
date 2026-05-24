@@ -232,7 +232,9 @@
         <input class="form-input" type="text" id="rep-name" placeholder="Name">
         <textarea class="form-textarea" id="rep-desc"
           placeholder="Description (or Upload Image for AI Based Description)" rows="5"></textarea>
+        <input class="form-input" type="text" id="rep-time" placeholder="Approximate Time (e.g. 2:30 PM Today)">
         <input class="form-input" type="text" id="rep-loc" placeholder="Location Address">
+        <textarea class="form-textarea" id="rep-hidden" placeholder="Hidden Identifiers / Unique Marks (Visible only to AI)" rows="2" style="border-color: rgba(168,197,160,0.5);"></textarea>
         <div>
           <input type="file" id="imgInput" accept="image/*">
           <label for="imgInput" class="btn btn-solid upload-btn">
@@ -373,11 +375,13 @@
       const name = document.getElementById('rep-name').value.trim();
       const desc = document.getElementById('rep-desc').value.trim();
       const loc = document.getElementById('rep-loc').value.trim();
+      const timeFound = document.getElementById('rep-time').value.trim();
+      const hiddenNotes = document.getElementById('rep-hidden').value.trim();
       const status = document.querySelector('input[name="status"]:checked').value;
 
       // Validation
       if (!name || !desc || !loc) {
-        alert('Please fill all fields.');
+        alert('Please fill all required fields.');
         return;
       }
 
@@ -387,6 +391,8 @@
         title: name,
         description: desc,
         location: loc,
+        timeFound: timeFound,
+        hiddenNotes: hiddenNotes,
         category: getCategoryFromDescription(desc),
         visualTags: cachedVisualTags, // attach hidden cross-modal visual tags!
         reporterId: user.id, // Replace with actual user ID from auth
@@ -453,7 +459,7 @@
       });
 
       // Add CartoDB Dark Matter tiles (Free, beautiful dark themed OpenStreetMap)
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
         subdomains: 'abcd',
         maxZoom: 20

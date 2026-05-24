@@ -190,6 +190,33 @@
   </div>
 
   <script src="mock-api/client.js"></script>
-</body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const fetchAndDisplayStats = async () => {
+        try {
+          const stats = await api.getPlatformStats();
+          
+          // Find stat elements
+          const statNums = document.querySelectorAll('.hero-stats .stat-num');
+          if (statNums.length >= 3) {
+            // Reunited
+            statNums[0].textContent = stats.reunited + "+";
+            // Match Rate
+            statNums[1].textContent = stats.matchRate;
+            // Avg Report Time
+            statNums[2].textContent = stats.avgReportTime;
+          }
+        } catch (err) {
+          console.error("Failed to load statistics:", err);
+        }
+      };
 
+      // Fetch immediately on load
+      fetchAndDisplayStats();
+
+      // Poll every 5 seconds for real-time updates
+      setInterval(fetchAndDisplayStats, 5000);
+    });
+  </script>
+</body>
 </html>
